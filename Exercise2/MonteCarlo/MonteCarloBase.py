@@ -19,28 +19,67 @@ class MonteCarloAgent(Agent):
         self.statusList = []
 
 	def learn(self):
-		raise NotImplementedError
+        G = 0
+        GList = []
+        tempDict = OrderedDict()
+        curEpisodeList = []
+
+        for i in range(1, len(self.rewardList) + 1):
+            G = self.discountFactor * G + self.rewardList[-i]
+            GList.insert(0, G)
+
+        for stateAction, GValue in zip(self.stateActionList, GList):
+            if stateAction not in tempDict.keys():
+                tempDict[stateAction] = GValue
+
+        for stateAction, GValue in tempDict.items():
+            self.returnsDict[stateAction].append(GValue)
+            self.QValueTable[stateAction] = sum(self.returnsDict[stateAction]) / len(self.returnsDict[stateAction])
+            curEpisodeList.append(self.QValueTable[stateAction])
+
+        return self.QValueTable, curEpisodeList
+		#raise NotImplementedError
 
 	def toStateRepresentation(self, state):
-		raise NotImplementedError
+		state = str(state)
+		return state
+		#raise NotImplementedError
 
 	def setExperience(self, state, action, reward, status, nextState):
-		raise NotImplementedError
+        self.stateActionList.append((state, action))
+        self.rewardList.append(reward)
+        self.statusList.append(status)
+		#raise NotImplementedError
 
 	def setState(self, state):
-		raise NotImplementedError
+		self.curState = state
+		#raise NotImplementedError
 
 	def reset(self):
-		raise NotImplementedError
+        self.stateActionList = []
+        self.rewardList = []
+        self.statusList = []
+		#raise NotImplementedError
 
 	def act(self):
-		raise NotImplementedError
+        randomNum = random.random()
+        if randomNum < self.epsilon:
+            return random.choice(self.possibleActions)
+        else:
+            actionDict = {key[1]: value for key, value in self.QValueTable.items() if key[0] == self.curState}
+            return random.choice(
+                [action for action, value in actionDict.items() if value == max(actionDict.values())])
+		#raise NotImplementedError
 
 	def setEpsilon(self, epsilon):
-		raise NotImplementedError
+		self.epsilon = epsilon
+		#raise NotImplementedError
 
 	def computeHyperparameters(self, numTakenActions, episodeNumber):
-		raise NotImplementedError
+        epsilon = 1. * ((1 - 1 / (1 + np.exp(-numTakenActions / 250))) * 2 * 0.9 + 0.1)
+
+        return epsilon
+		#raise NotImplementedError
 
 
 if __name__ == '__main__':
